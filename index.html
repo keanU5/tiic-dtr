@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIIC DTR - Reymark</title>
+    <!-- Bootstrap for Mobile Look -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Firebase Legacy Scripts (Easier for single-file HTML) -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .tiic-card { border: none; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .header-gradient { background: linear-gradient(135deg, #0d6efd 0%, #003399 100%); color: white; padding: 40px 20px; border-radius: 0 0 30px 30px; }
+        .btn-circle { width: 120px; height: 120px; border-radius: 50%; font-weight: bold; border: 8px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .log-item { font-size: 0.85rem; border-left: 4px solid #0d6efd; margin-bottom: 10px; background: white; padding: 10px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="header-gradient text-center">
+    <small class="opacity-75 uppercase fw-bold" style="letter-spacing: 2px;">TIIC Industrial Corp.</small>
+    <h4 class="mt-1">IT Department DTR</h4>
+    <p class="small opacity-75">Manager: Daven Amores</p>
+    <h1 id="clock" class="display-4 fw-bold my-3">00:00:00</h1>
+    <p id="date" class="small"></p>
+</div>
+
+<div class="container mt-n4" style="margin-top: -30px;">
+    <!-- Rules Toggle -->
+    <div class="card tiic-card p-3 mb-3">
+        <div class="form-check form-switch d-flex justify-content-between align-items-center">
+            <label class="form-check-label fw-bold text-primary" for="holidayToggle">Is there a Holiday this week?</label>
+            <input class="form-check-input" type="checkbox" id="holidayToggle" style="width: 50px; height: 25px;">
+        </div>
+        <hr>
+        <div class="row text-center">
+            <div class="col">
+                <small class="text-muted d-block">Required In</small>
+                <span class="fw-bold">8:00 AM</span>
+            </div>
+            <div class="col">
+                <small class="text-muted d-block">Target Out</small>
+                <span id="targetOutDisplay" class="fw-bold text-danger">6:06 PM</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Site Selection -->
+    <div class="card tiic-card p-3 mb-4">
+        <label class="form-label small fw-bold text-muted">CURRENT DUTY SITE</label>
+        <select id="siteSelect" class="form-select form-select-lg border-0 bg-light fw-bold">
+            <option value="BAKILID">BAKILID Site</option>
+            <option value="iPAK">iPAK Site</option>
+            <option value="Main Office">Main Office</option>
+        </select>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex justify-content-around mb-5">
+        <button id="btnIn" class="btn btn-primary btn-circle">CLOCK<br>IN</button>
+        <button id="btnOut" class="btn btn-dark btn-circle">CLOCK<br>OUT</button>
+    </div>
+
+    <!-- Recent Logs -->
+    <h6 class="text-muted fw-bold mb-3">RECENT ACTIVITY</h6>
+    <div id="logContainer">
+        <!-- Logs will appear here -->
+    </div>
+
+    <p class="text-center text-muted small mt-5 mb-5">OJT Start Date: Feb 16, 2026</p>
+</div>
+
+<script>
+    // 1. DATA FROM YOUR SCREENSHOT
+    const firebaseConfig = {
+        apiKey: "AIzaSyDLMSpNwzh9REwoToXkERM6tz3zg_8auuI",
+        authDomain: "tiic-dtr.firebaseapp.com",
+        databaseURL: "https://tiic-dtr-default-rtdb.firebaseio.com",
+        projectId: "tiic-dtr",
+        storageBucket: "tiic-dtr.firebasestorage.app",
+        messagingSenderId: "852848714796",
+        appId: "1:852848714796:web:f5d648281a4dfe09275d89",
+        measurementId: "G-Z00S8CD0GX"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 2. TIME LOGIC
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        document.getElementById('date').innerText = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    setInterval(updateClock, 1000);
+
+    // 3. HOLIDAY RULE TOGGLE
+    const holidayToggle = document.getElementById('holidayToggle');
+    const targetOutDisplay = document.getElementById('targetOutDisplay');
+
+    holidayToggle.onchange = function() {
+        targetOutDisplay.innerText = this.checked ? "6:30 PM" : "6:06 PM";
+        targetOutDisplay.className = this.checked ? "fw-bold text-warning" : "fw-bold text-danger";
+    };
+
+    // 4. CLOCK IN FUNCTION
+    document.getElementById('btnIn').onclick = function() {
+        const now = new Date();
+        const site = document.getElementById('siteSelect').value;
+        const target = targetOutDisplay.innerText;
+
+        const data = {
+            type: "IN",
+            timestamp: now.getTime(),
+            readableTime: now.toLocaleTimeString(),
+            readableDate: now.toLocaleDateString(),
+            site: site,
+            targetOut: target
+        };
+
+        db.ref('logs').push(data).then(() => {
+            alert("✅ Clocked In Successfully!");
+            loadLogs();
+        });
+    };
+
+    // 5. CLOCK OUT FUNCTION (Calculates work duration)
+    document.getElementById('btnOut').onclick = function() {
+        const now = new Date();
+        const data = {
+            type: "OUT",
+            timestamp: now.getTime(),
+            readableTime: now.toLocaleTimeString(),
+            readableDate: now.toLocaleDateString(),
+            site: document.getElementById('siteSelect').value
+        };
+
+        db.ref('logs').push(data).then(() => {
+            alert("🚀 Clocked Out! Don't forget to submit your accomplishment.");
+            loadLogs();
+        });
+    };
+
+    // 6. SHOW LOGS ON SCREEN
+    function loadLogs() {
+        db.ref('logs').limitToLast(5).once('value', (snap) => {
+            const container = document.getElementById('logContainer');
+            container.innerHTML = "";
+            snap.forEach((child) => {
+                const log = child.val();
+                const div = document.createElement('div');
+                div.className = "log-item shadow-sm d-flex justify-content-between align-items-center";
+                div.innerHTML = `
+                    <div>
+                        <span class="badge ${log.type == 'IN' ? 'bg-primary' : 'bg-dark'} me-2">${log.type}</span>
+                        <strong>${log.readableTime}</strong> <br>
+                        <small class="text-muted">${log.readableDate} @ ${log.site}</small>
+                    </div>
+                `;
+                container.prepend(div);
+            });
+        });
+    }
+    loadLogs();
+</script>
+
+</body>
+</html>
