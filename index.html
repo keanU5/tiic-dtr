@@ -3,131 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TIIC OJT PRO - Reymark</title>
+    <title>TIIC OJT Dashboard - Reymark</title>
+    <!-- Google Font: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        :root { --tiic-blue: #0038a8; --accent: #00d2ff; }
-        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; color: #1e293b; padding-bottom: 80px; }
+        :root { --tiic-blue: #0052cc; --tiic-dark: #071e3d; --glass: rgba(255, 255, 255, 0.9); }
+        body { background-color: #f4f7fa; font-family: 'Poppins', sans-serif; color: #2d3436; padding-bottom: 90px; }
         
-        /* Professional Navigation */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 12px 0; z-index: 1000; }
-        .nav-item { border: none; background: none; color: #64748b; font-size: 0.75rem; text-align: center; }
-        .nav-item.active { color: var(--tiic-blue); font-weight: 700; }
-        .nav-item i { font-size: 1.4rem; display: block; }
+        /* Layout */
+        .app-header { background: linear-gradient(135deg, var(--tiic-blue), #003399); color: white; padding: 40px 20px 60px; border-radius: 0 0 30px 30px; }
+        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; }
+        .nav-btn { background: none; border: none; color: #b2bec3; transition: 0.3s; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+        .nav-btn.active { color: var(--tiic-blue); }
+        .nav-btn i { font-size: 1.5rem; display: block; margin-bottom: 2px; }
 
-        /* Dashboard Elements */
-        .glass-header { background: var(--tiic-blue); background: linear-gradient(135deg, #0038a8 0%, #001a4d 100%); color: white; padding: 40px 20px 60px; border-radius: 0 0 40px 40px; }
-        .stat-card { background: white; border-radius: 20px; border: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 20px; margin-top: -40px; }
-        .progress { height: 8px; border-radius: 10px; background: #e2e8f0; }
-        .progress-bar { background: var(--accent); }
+        /* Cards */
+        .pro-card { background: white; border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.03); padding: 20px; margin-top: -40px; margin-bottom: 20px; }
+        .stat-box { background: #f8f9fe; border-radius: 15px; padding: 15px; text-align: center; height: 100%; }
+        
+        /* Progress Bar */
+        .progress { height: 10px; border-radius: 10px; background: #e9ecef; margin: 15px 0; }
+        .progress-bar { background: var(--tiic-blue); border-radius: 10px; }
 
-        /* Buttons */
-        .btn-clock { width: 150px; height: 150px; border-radius: 50%; font-weight: 700; border: 10px solid #f1f5f9; box-shadow: 0 10px 25px rgba(0,56,168,0.2); transition: 0.3s; }
-        .btn-clock:active { transform: scale(0.95); }
-        
-        /* History Items */
-        .history-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 12px; border-left: 5px solid var(--tiic-blue); }
-        
-        .page-content { display: none; }
-        .page-content.active { display: block; }
-        #loading { position: fixed; inset: 0; background: white; z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        /* Main Clock Buttons */
+        .btn-main { width: 140px; height: 140px; border-radius: 50%; font-weight: 700; border: 8px solid #f4f7fa; box-shadow: 0 15px 30px rgba(0,82,204,0.2); transition: 0.3s; }
+        .btn-in { background: var(--tiic-blue); color: white; }
+        .btn-out { background: var(--tiic-dark); color: white; }
+        .btn-main:active { transform: scale(0.9); }
+
+        .page { display: none; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        #loader { position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 2000; }
     </style>
 </head>
 <body>
 
-<div id="loading"><div class="spinner-border text-primary"></div></div>
+<div id="loader"><div class="spinner-grow text-primary"></div></div>
 
-<!-- TOP HEADER -->
-<div class="glass-header text-center">
-    <small class="opacity-75 tracking-widest text-uppercase fw-bold" style="font-size: 0.65rem;">TIIC Industrial Corp | IT Dept</small>
-    <h1 id="clock" class="fw-bold my-2">00:00:00</h1>
-    <p id="date" class="small opacity-75 mb-0"></p>
+<!-- NAVIGATION -->
+<nav class="nav-bar">
+    <button class="nav-btn active" onclick="switchPage('home', this)">
+        <i class="bi bi-grid-1x2-fill"></i>Home
+    </button>
+    <button class="nav-btn" onclick="switchPage('history', this)">
+        <i class="bi bi-clock-history"></i>History
+    </button>
+    <button class="nav-btn" onclick="switchPage('stats', this)">
+        <i class="bi bi-bar-chart-fill"></i>Stats
+    </button>
+</nav>
+
+<!-- HEADER -->
+<div class="app-header text-center">
+    <small class="fw-bold opacity-75">TIIC INDUSTRIAL CORP | IT DEPT</small>
+    <h1 id="liveClock" class="fw-bold mt-2 mb-0">00:00:00</h1>
+    <p id="liveDate" class="small opacity-75"></p>
 </div>
 
 <!-- PAGE: HOME -->
-<div id="homePage" class="page-content active container">
-    <div class="stat-card mb-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="fw-bold mb-0">OJT Rendering Progress</h6>
-            <span id="percText" class="badge bg-primary rounded-pill">0%</span>
+<div id="home" class="page active container px-4">
+    <div class="pro-card">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0">OJT Completion</h6>
+            <span id="percVal" class="text-primary fw-bold">0%</span>
         </div>
-        <div class="progress mb-3">
-            <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+        <div class="progress">
+            <div id="progBar" class="progress-bar" style="width: 0%"></div>
         </div>
-        <div class="row text-center mt-2">
-            <div class="col-6 border-end">
-                <small class="text-muted d-block">Rendered</small>
-                <span id="renderedHrs" class="fw-bold text-dark">0h</span>
+        <div class="row g-2">
+            <div class="col-6">
+                <div class="stat-box">
+                    <small class="text-muted d-block">Rendered</small>
+                    <span id="renderedHrs" class="fw-bold h5">0.0</span> <small>hrs</small>
+                </div>
             </div>
             <div class="col-6">
-                <small class="text-muted d-block">Remaining</small>
-                <span id="remainingHrs" class="fw-bold text-primary">480h</span>
+                <div class="stat-box">
+                    <small class="text-muted d-block">Remaining</small>
+                    <span id="remainingHrs" class="fw-bold h5 text-primary">480</span> <small>hrs</small>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Clocking Logic -->
-    <div id="actionBox" class="card shadow-sm border-0 p-4 mb-4 rounded-4 text-center">
-        <p id="statusMsg" class="text-muted small mb-4">You haven't clocked in for today.</p>
-        <div class="d-flex justify-content-center">
-            <button id="btnIn" class="btn btn-primary btn-clock">CLOCK IN</button>
-            <button id="btnOut" class="btn btn-dark btn-circle btn-clock d-none">CLOCK OUT</button>
-        </div>
-        <div id="completedDay" class="d-none">
-            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
-            <h5 class="fw-bold mt-2">Duty Finished</h5>
-            <p id="dailySummary" class="text-muted small"></p>
-        </div>
-    </div>
-
-    <div class="row g-3">
-        <div class="col-6">
-            <div class="card border-0 shadow-sm p-3 rounded-4">
-                <small class="text-muted d-block fw-bold">LOCATION</small>
-                <select id="siteSelect" class="form-select border-0 ps-0 fw-bold">
-                    <option>BAKILID SITE</option>
-                    <option>iPAK SITE</option>
-                    <option>MAIN OFFICE</option>
-                </select>
+    <!-- Clock Control -->
+    <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 text-center">
+        <div class="mb-4">
+            <select id="siteSel" class="form-select border-0 bg-light fw-bold text-center">
+                <option>BAKILID SITE</option>
+                <option>iPAK SITE</option>
+                <option>MAIN OFFICE</option>
+            </select>
+            <div class="mt-2">
+                <input type="checkbox" id="holidayRule" class="form-check-input">
+                <label for="holidayRule" class="small fw-bold text-muted">Holiday Rule (6:30 PM)</label>
             </div>
         </div>
-        <div class="col-6">
-            <div class="card border-0 shadow-sm p-3 rounded-4">
-                <small class="text-muted d-block fw-bold">RULE</small>
-                <select id="ruleSelect" class="form-select border-0 ps-0 fw-bold">
-                    <option value="6:06 PM">Standard (6:06)</option>
-                    <option value="6:30 PM">Holiday (6:30)</option>
-                </select>
+
+        <div id="clockArea" class="d-flex justify-content-center py-2">
+            <button id="btnIn" class="btn btn-main btn-in">CLOCK IN</button>
+            <button id="btnOut" class="btn btn-main btn-out d-none">CLOCK OUT</button>
+        </div>
+
+        <div id="shiftDone" class="d-none py-3">
+            <div class="alert alert-success border-0 rounded-4">
+                <i class="bi bi-check-all h1"></i>
+                <h6 class="fw-bold">Daily Shift Completed</h6>
+                <small>Records saved to Manager Daven Amores</small>
             </div>
         </div>
     </div>
 </div>
 
 <!-- PAGE: HISTORY -->
-<div id="historyPage" class="page-content container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="fw-bold mb-0">Attendance Log</h5>
-        <button onclick="exportData()" class="btn btn-sm btn-outline-primary rounded-pill px-3">Export</button>
+<div id="history" class="page container px-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold">Attendance Logs</h5>
+        <span class="badge bg-white text-dark shadow-sm px-3 py-2 rounded-pill">2026</span>
     </div>
-    <div id="historyList"></div>
+    <div id="logList"></div>
 </div>
 
-<!-- BOTTOM NAV -->
-<nav class="bottom-nav">
-    <button class="nav-item active" onclick="showPage('homePage', this)">
-        <i class="bi bi-house-door-fill"></i>Home
-    </button>
-    <button class="nav-item" onclick="showPage('historyPage', this)">
-        <i class="bi bi-calendar-check"></i>History
-    </button>
-</nav>
+<!-- PAGE: STATS -->
+<div id="stats" class="page container px-4 mt-4 text-center">
+    <div class="pro-card mt-0">
+        <h5 class="fw-bold mb-4">OJT Summary</h5>
+        <div class="p-4 bg-light rounded-4 mb-3">
+            <small class="text-muted">Total Days Rendered</small>
+            <h1 id="totalDays" class="fw-bold text-primary">0</h1>
+        </div>
+        <div class="p-4 bg-light rounded-4">
+            <small class="text-muted">Avg. Hours Per Day</small>
+            <h1 id="avgHrs" class="fw-bold text-dark">0.0</h1>
+        </div>
+    </div>
+</div>
 
 <script>
-    // 1. CONFIG
+    // FIREBASE CONFIG
     const firebaseConfig = {
         apiKey: "AIzaSyDLMSpNwzh9REwoToXkERM6tz3zg_8auuI",
         authDomain: "tiic-dtr.firebaseapp.com",
@@ -140,129 +161,114 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const OJT_GOAL = 480; // Total required hours
+    const TARGET_HRS = 480;
 
-    // 2. APP LOGIC
-    function showPage(id, el) {
-        document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        el.classList.add('active');
+    // NAVIGATION
+    function switchPage(pageId, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        btn.classList.add('active');
     }
 
-    function updateClock() {
+    // CLOCK
+    setInterval(() => {
         const now = new Date();
-        document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-        document.getElementById('date').innerText = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-    }
-    setInterval(updateClock, 1000);
+        document.getElementById('liveClock').innerText = now.toLocaleTimeString();
+        document.getElementById('liveDate').innerText = now.toDateString();
+    }, 1000);
 
-    // 3. CORE CALCULATION ENGINE
-    async function refreshApp() {
+    // DATA PROCESSING ENGINE
+    async function init() {
         const todayStr = new Date().toLocaleDateString();
-        db.ref('logs').once('value', (snapshot) => {
-            let allLogs = [];
-            let totalRenderedMs = 0;
-            let todayIn = null;
-            let todayOut = null;
+        
+        db.ref('logs').on('value', (snap) => {
+            let logs = [];
+            snap.forEach(child => logs.push(child.val()));
 
-            snapshot.forEach(child => {
-                const log = child.val();
-                allLogs.push(log);
+            // Logic: Process Logs by Date
+            const days = {};
+            logs.forEach(l => {
+                if(!days[l.readableDate]) days[l.readableDate] = {};
+                days[l.readableDate][l.type] = l.timestamp;
+                days[l.readableDate].site = l.site;
             });
 
-            // Group logs by date to calculate hours
-            const grouped = allLogs.reduce((acc, log) => {
-                if (!acc[log.readableDate]) acc[log.readableDate] = {};
-                acc[log.readableDate][log.type] = log.timestamp;
-                return acc;
-            }, {});
+            let totalRendered = 0;
+            let dayCount = 0;
+            let html = "";
 
-            let historyHTML = "";
-            Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a)).forEach(date => {
-                const day = grouped[date];
-                let hrs = 0;
-                if (day.IN && day.OUT) {
-                    let diff = day.OUT - day.IN;
-                    hrs = (diff / (1000 * 60 * 60));
-                    if (hrs > 5) hrs -= 1; // Subtract 1hr for lunch
-                    totalRenderedMs += hrs;
+            Object.keys(days).sort((a,b) => new Date(b) - new Date(a)).forEach(date => {
+                const d = days[date];
+                let dailyHrs = 0;
+                if(d.IN && d.OUT) {
+                    dailyHrs = (d.OUT - d.IN) / 3600000;
+                    if(dailyHrs > 5) dailyHrs -= 1; // Lunch break rule
+                    totalRendered += dailyHrs;
+                    dayCount++;
                 }
 
-                historyHTML += `
-                    <div class="history-card shadow-sm">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <small class="text-muted fw-bold">${date}</small>
-                                <div class="fw-bold text-dark mt-1">
-                                    ${day.IN ? new Date(day.IN).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--'} 
-                                    → 
-                                    ${day.OUT ? new Date(day.OUT).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--'}
-                                </div>
-                            </div>
-                            <div class="text-end">
-                                <span class="badge bg-light text-primary border">${hrs.toFixed(2)} hrs</span>
-                            </div>
+                html += `
+                <div class="card border-0 shadow-sm rounded-4 mb-3 p-3 border-start border-primary border-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="small fw-bold text-muted mb-1">${date}</p>
+                            <span class="fw-bold">${new Date(d.IN).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            <i class="bi bi-arrow-right mx-2 opacity-50"></i>
+                            <span class="fw-bold">${d.OUT ? new Date(d.OUT).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--'}</span>
                         </div>
-                    </div>`;
-                
-                if (date === todayStr) {
-                    todayIn = day.IN;
-                    todayOut = day.OUT;
-                }
+                        <div class="text-end">
+                            <span class="badge bg-soft-primary text-primary border border-primary-subtle">${dailyHrs.toFixed(1)} hrs</span>
+                            <p class="small text-muted mb-0 mt-1" style="font-size:0.6rem">${d.site}</p>
+                        </div>
+                    </div>
+                </div>`;
             });
 
             // Update UI
-            document.getElementById('historyList').innerHTML = historyHTML;
-            const totalHrs = totalRenderedMs;
-            document.getElementById('renderedHrs').innerText = totalHrs.toFixed(1) + "h";
-            document.getElementById('remainingHrs').innerText = Math.max(0, OJT_GOAL - totalHrs).toFixed(1) + "h";
-            const perc = Math.min(100, (totalHrs / OJT_GOAL) * 100);
-            document.getElementById('progressBar').style.width = perc + "%";
-            document.getElementById('percText').innerText = perc.toFixed(0) + "%";
+            document.getElementById('logList').innerHTML = html;
+            document.getElementById('renderedHrs').innerText = totalRendered.toFixed(1);
+            document.getElementById('remainingHrs').innerText = (TARGET_HRS - totalRendered).toFixed(1);
+            document.getElementById('totalDays').innerText = dayCount;
+            document.getElementById('avgHrs').innerText = dayCount ? (totalRendered/dayCount).toFixed(1) : "0.0";
+            
+            const perc = Math.min(100, (totalRendered/TARGET_HRS)*100);
+            document.getElementById('progBar').style.width = perc + "%";
+            document.getElementById('percVal').innerText = perc.toFixed(0) + "%";
 
-            // Button Control Logic
-            if (todayIn && todayOut) {
-                document.getElementById('btnIn').classList.add('d-none');
-                document.getElementById('btnOut').classList.add('d-none');
-                document.getElementById('completedDay').classList.remove('d-none');
-                document.getElementById('statusMsg').classList.add('d-none');
-            } else if (todayIn) {
+            // Strict Button Logic
+            const today = days[todayStr];
+            if(today && today.IN && today.OUT) {
+                document.getElementById('clockArea').classList.add('d-none');
+                document.getElementById('shiftDone').classList.remove('d-none');
+            } else if(today && today.IN) {
                 document.getElementById('btnIn').classList.add('d-none');
                 document.getElementById('btnOut').classList.remove('d-none');
-                document.getElementById('statusMsg').innerText = "Logged IN at " + new Date(todayIn).toLocaleTimeString();
             } else {
                 document.getElementById('btnIn').classList.remove('d-none');
                 document.getElementById('btnOut').classList.add('d-none');
             }
 
-            document.getElementById('loading').style.display = 'none';
+            document.getElementById('loader').style.display = 'none';
         });
     }
 
-    // 4. SAVE ACTION
     async function clockAction(type) {
-        if (!confirm(`Confirm Clock ${type}?`)) return;
+        if(!confirm(`Proceed with Clock ${type}?`)) return;
         const now = new Date();
-        const data = {
+        await db.ref('logs').push({
             timestamp: now.getTime(),
             readableDate: now.toLocaleDateString(),
             type: type,
-            site: document.getElementById('siteSelect').value,
-            rule: document.getElementById('ruleSelect').value
-        };
-        await db.ref('logs').push(data);
-        refreshApp();
+            site: document.getElementById('siteSel').value,
+            rule: document.getElementById('holidayRule').checked ? "6:30 PM" : "6:06 PM"
+        });
     }
 
     document.getElementById('btnIn').onclick = () => clockAction("IN");
     document.getElementById('btnOut').onclick = () => clockAction("OUT");
 
-    function exportData() {
-        alert("This feature can generate a PDF in the next update!");
-    }
-
-    refreshApp();
+    init();
 </script>
 
 </body>
