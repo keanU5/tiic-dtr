@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TIIC OJT Dashboard - Reymark</title>
-    <!-- Google Font: Poppins -->
+    <!-- Poppins Font -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
@@ -13,142 +13,99 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <style>
-        :root { --tiic-blue: #0052cc; --tiic-dark: #071e3d; --glass: rgba(255, 255, 255, 0.9); }
+        :root { --tiic-blue: #0052cc; --tiic-dark: #071e3d; }
         body { background-color: #f4f7fa; font-family: 'Poppins', sans-serif; color: #2d3436; padding-bottom: 90px; }
         
-        /* Layout */
         .app-header { background: linear-gradient(135deg, var(--tiic-blue), #003399); color: white; padding: 40px 20px 60px; border-radius: 0 0 30px 30px; }
         .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 15px 0; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 1000; }
-        .nav-btn { background: none; border: none; color: #b2bec3; transition: 0.3s; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+        .nav-btn { background: none; border: none; color: #b2bec3; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
         .nav-btn.active { color: var(--tiic-blue); }
         .nav-btn i { font-size: 1.5rem; display: block; margin-bottom: 2px; }
 
-        /* Cards */
         .pro-card { background: white; border-radius: 20px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.03); padding: 20px; margin-top: -40px; margin-bottom: 20px; }
-        .stat-box { background: #f8f9fe; border-radius: 15px; padding: 15px; text-align: center; height: 100%; }
+        .stat-box { background: #f8f9fe; border-radius: 15px; padding: 15px; text-align: center; }
         
-        /* Progress Bar */
         .progress { height: 10px; border-radius: 10px; background: #e9ecef; margin: 15px 0; }
         .progress-bar { background: var(--tiic-blue); border-radius: 10px; }
 
-        /* Main Clock Buttons */
         .btn-main { width: 140px; height: 140px; border-radius: 50%; font-weight: 700; border: 8px solid #f4f7fa; box-shadow: 0 15px 30px rgba(0,82,204,0.2); transition: 0.3s; }
         .btn-in { background: var(--tiic-blue); color: white; }
         .btn-out { background: var(--tiic-dark); color: white; }
-        .btn-main:active { transform: scale(0.9); }
 
-        .page { display: none; animation: fadeIn 0.3s ease; }
+        .page { display: none; }
         .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
         #loader { position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 2000; }
+        
+        .log-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 12px; border-left: 5px solid var(--tiic-blue); box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
     </style>
 </head>
 <body>
 
 <div id="loader"><div class="spinner-grow text-primary"></div></div>
 
-<!-- NAVIGATION -->
 <nav class="nav-bar">
-    <button class="nav-btn active" onclick="switchPage('home', this)">
-        <i class="bi bi-grid-1x2-fill"></i>Home
-    </button>
-    <button class="nav-btn" onclick="switchPage('history', this)">
-        <i class="bi bi-clock-history"></i>History
-    </button>
-    <button class="nav-btn" onclick="switchPage('stats', this)">
-        <i class="bi bi-bar-chart-fill"></i>Stats
-    </button>
+    <button class="nav-btn active" onclick="switchPage('home', this)"><i class="bi bi-house-door-fill"></i>Home</button>
+    <button class="nav-btn" onclick="switchPage('history', this)"><i class="bi bi-clock-history"></i>History</button>
+    <button class="nav-btn" onclick="switchPage('stats', this)"><i class="bi bi-bar-chart-fill"></i>Stats</button>
 </nav>
 
-<!-- HEADER -->
 <div class="app-header text-center">
     <small class="fw-bold opacity-75">TIIC INDUSTRIAL CORP | IT DEPT</small>
     <h1 id="liveClock" class="fw-bold mt-2 mb-0">00:00:00</h1>
     <p id="liveDate" class="small opacity-75"></p>
 </div>
 
-<!-- PAGE: HOME -->
+<!-- HOME -->
 <div id="home" class="page active container px-4">
     <div class="pro-card">
         <div class="d-flex justify-content-between align-items-center">
             <h6 class="fw-bold mb-0">OJT Completion</h6>
             <span id="percVal" class="text-primary fw-bold">0%</span>
         </div>
-        <div class="progress">
-            <div id="progBar" class="progress-bar" style="width: 0%"></div>
-        </div>
+        <div class="progress"><div id="progBar" class="progress-bar" style="width: 0%"></div></div>
         <div class="row g-2">
-            <div class="col-6">
-                <div class="stat-box">
-                    <small class="text-muted d-block">Rendered</small>
-                    <span id="renderedHrs" class="fw-bold h5">0.0</span> <small>hrs</small>
-                </div>
-            </div>
-            <div class="col-6">
-                <div class="stat-box">
-                    <small class="text-muted d-block">Remaining</small>
-                    <span id="remainingHrs" class="fw-bold h5 text-primary">480</span> <small>hrs</small>
-                </div>
-            </div>
+            <div class="col-6"><div class="stat-box"><small class="text-muted d-block">Rendered</small><span id="renderedHrs" class="fw-bold h5">0.0</span> <small>hrs</small></div></div>
+            <div class="col-6"><div class="stat-box"><small class="text-muted d-block">Remaining</small><span id="remainingHrs" class="fw-bold h5 text-primary">480</span> <small>hrs</small></div></div>
         </div>
     </div>
 
-    <!-- Clock Control -->
-    <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 text-center">
-        <div class="mb-4">
-            <select id="siteSel" class="form-select border-0 bg-light fw-bold text-center">
-                <option>BAKILID SITE</option>
-                <option>iPAK SITE</option>
-                <option>MAIN OFFICE</option>
-            </select>
-            <div class="mt-2">
-                <input type="checkbox" id="holidayRule" class="form-check-input">
-                <label for="holidayRule" class="small fw-bold text-muted">Holiday Rule (6:30 PM)</label>
-            </div>
-        </div>
-
+    <div class="card border-0 rounded-4 shadow-sm p-4 text-center">
+        <select id="siteSel" class="form-select border-0 bg-light fw-bold text-center mb-3">
+            <option>iPAK SITE</option>
+            <option>BAKILID SITE</option>
+            <option>MAIN OFFICE</option>
+        </select>
         <div id="clockArea" class="d-flex justify-content-center py-2">
-            <button id="btnIn" class="btn btn-main btn-in">CLOCK IN</button>
-            <button id="btnOut" class="btn btn-main btn-out d-none">CLOCK OUT</button>
+            <button id="btnIn" class="btn btn-main btn-in shadow">CLOCK IN</button>
+            <button id="btnOut" class="btn btn-main btn-out shadow d-none">CLOCK OUT</button>
         </div>
-
         <div id="shiftDone" class="d-none py-3">
             <div class="alert alert-success border-0 rounded-4">
-                <i class="bi bi-check-all h1"></i>
-                <h6 class="fw-bold">Daily Shift Completed</h6>
-                <small>Records saved to Manager Daven Amores</small>
+                <i class="bi bi-check-circle-fill h1 d-block mb-2"></i>
+                <h6 class="fw-bold">Shift Logged for Today</h6>
             </div>
         </div>
     </div>
 </div>
 
-<!-- PAGE: HISTORY -->
+<!-- HISTORY -->
 <div id="history" class="page container px-4 mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-bold">Attendance Logs</h5>
-        <span class="badge bg-white text-dark shadow-sm px-3 py-2 rounded-pill">2026</span>
-    </div>
+    <h5 class="fw-bold mb-3">Duty History</h5>
     <div id="logList"></div>
 </div>
 
-<!-- PAGE: STATS -->
+<!-- STATS -->
 <div id="stats" class="page container px-4 mt-4 text-center">
     <div class="pro-card mt-0">
         <h5 class="fw-bold mb-4">OJT Summary</h5>
-        <div class="p-4 bg-light rounded-4 mb-3">
-            <small class="text-muted">Total Days Rendered</small>
-            <h1 id="totalDays" class="fw-bold text-primary">0</h1>
-        </div>
-        <div class="p-4 bg-light rounded-4">
-            <small class="text-muted">Avg. Hours Per Day</small>
-            <h1 id="avgHrs" class="fw-bold text-dark">0.0</h1>
+        <div class="row g-3">
+            <div class="col-12"><div class="p-3 bg-light rounded-4"><small class="text-muted">Total Days</small><h2 id="totalDays" class="fw-bold text-primary mb-0">0</h2></div></div>
+            <div class="col-12"><div class="p-3 bg-light rounded-4"><small class="text-muted">Avg Hours/Day</small><h2 id="avgHrs" class="fw-bold mb-0">0.0</h2></div></div>
         </div>
     </div>
 </div>
 
 <script>
-    // FIREBASE CONFIG
     const firebaseConfig = {
         apiKey: "AIzaSyDLMSpNwzh9REwoToXkERM6tz3zg_8auuI",
         authDomain: "tiic-dtr.firebaseapp.com",
@@ -163,7 +120,6 @@
     const db = firebase.database();
     const TARGET_HRS = 480;
 
-    // NAVIGATION
     function switchPage(pageId, btn) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
@@ -171,73 +127,69 @@
         btn.classList.add('active');
     }
 
-    // CLOCK
     setInterval(() => {
-        const now = new Date();
-        document.getElementById('liveClock').innerText = now.toLocaleTimeString();
-        document.getElementById('liveDate').innerText = now.toDateString();
+        document.getElementById('liveClock').innerText = new Date().toLocaleTimeString();
+        document.getElementById('liveDate').innerText = new Date().toDateString();
     }, 1000);
 
-    // DATA PROCESSING ENGINE
-    async function init() {
-        const todayStr = new Date().toLocaleDateString();
-        
-        db.ref('logs').on('value', (snap) => {
-            let logs = [];
-            snap.forEach(child => logs.push(child.val()));
+    // Standardize date to "YYYY-MM-DD" so format never breaks
+    function getStdDate(d) {
+        const date = new Date(d);
+        return `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`;
+    }
 
-            // Logic: Process Logs by Date
+    function refreshData() {
+        db.ref('logs').on('value', (snap) => {
             const days = {};
-            logs.forEach(l => {
-                if(!days[l.readableDate]) days[l.readableDate] = {};
-                days[l.readableDate][l.type] = l.timestamp;
-                days[l.readableDate].site = l.site;
+            snap.forEach(child => {
+                const log = child.val();
+                const dateKey = getStdDate(log.readableDate);
+                if(!days[dateKey]) days[dateKey] = { dateLabel: log.readableDate, site: log.site };
+                days[dateKey][log.type] = log.timestamp;
             });
 
-            let totalRendered = 0;
+            let totalHrs = 0;
             let dayCount = 0;
-            let html = "";
+            let historyHtml = "";
 
-            Object.keys(days).sort((a,b) => new Date(b) - new Date(a)).forEach(date => {
-                const d = days[date];
-                let dailyHrs = 0;
+            Object.keys(days).sort((a,b) => new Date(b) - new Date(a)).forEach(key => {
+                const d = days[key];
                 if(d.IN && d.OUT) {
-                    dailyHrs = (d.OUT - d.IN) / 3600000;
-                    if(dailyHrs > 5) dailyHrs -= 1; // Lunch break rule
-                    totalRendered += dailyHrs;
+                    let hrs = (d.OUT - d.IN) / 3600000;
+                    if(hrs > 5) hrs -= 1; // Lunch break
+                    totalHrs += hrs;
                     dayCount++;
-                }
 
-                html += `
-                <div class="card border-0 shadow-sm rounded-4 mb-3 p-3 border-start border-primary border-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="small fw-bold text-muted mb-1">${date}</p>
-                            <span class="fw-bold">${new Date(d.IN).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                            <i class="bi bi-arrow-right mx-2 opacity-50"></i>
-                            <span class="fw-bold">${d.OUT ? new Date(d.OUT).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '--:--'}</span>
+                    historyHtml += `
+                    <div class="log-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="fw-bold text-muted">${d.dateLabel}</small>
+                                <div class="fw-bold">${new Date(d.IN).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} - ${new Date(d.OUT).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary">${hrs.toFixed(1)}h</span>
+                                <div style="font-size: 0.6rem" class="text-muted mt-1">${d.site}</div>
+                            </div>
                         </div>
-                        <div class="text-end">
-                            <span class="badge bg-soft-primary text-primary border border-primary-subtle">${dailyHrs.toFixed(1)} hrs</span>
-                            <p class="small text-muted mb-0 mt-1" style="font-size:0.6rem">${d.site}</p>
-                        </div>
-                    </div>
-                </div>`;
+                    </div>`;
+                }
             });
 
             // Update UI
-            document.getElementById('logList').innerHTML = html;
-            document.getElementById('renderedHrs').innerText = totalRendered.toFixed(1);
-            document.getElementById('remainingHrs').innerText = (TARGET_HRS - totalRendered).toFixed(1);
+            document.getElementById('logList').innerHTML = historyHtml || "<p class='text-center text-muted'>No completed shifts yet.</p>";
+            document.getElementById('renderedHrs').innerText = totalHrs.toFixed(1);
+            document.getElementById('remainingHrs').innerText = (TARGET_HRS - totalHrs).toFixed(1);
             document.getElementById('totalDays').innerText = dayCount;
-            document.getElementById('avgHrs').innerText = dayCount ? (totalRendered/dayCount).toFixed(1) : "0.0";
+            document.getElementById('avgHrs').innerText = dayCount ? (totalHrs/dayCount).toFixed(1) : "0.0";
             
-            const perc = Math.min(100, (totalRendered/TARGET_HRS)*100);
+            const perc = Math.min(100, (totalHrs/TARGET_HRS)*100);
             document.getElementById('progBar').style.width = perc + "%";
             document.getElementById('percVal').innerText = perc.toFixed(0) + "%";
 
-            // Strict Button Logic
-            const today = days[todayStr];
+            // Button Logic for today
+            const todayKey = getStdDate(new Date());
+            const today = days[todayKey];
             if(today && today.IN && today.OUT) {
                 document.getElementById('clockArea').classList.add('d-none');
                 document.getElementById('shiftDone').classList.remove('d-none');
@@ -248,28 +200,25 @@
                 document.getElementById('btnIn').classList.remove('d-none');
                 document.getElementById('btnOut').classList.add('d-none');
             }
-
             document.getElementById('loader').style.display = 'none';
         });
     }
 
-    async function clockAction(type) {
-        if(!confirm(`Proceed with Clock ${type}?`)) return;
+    async function doClock(type) {
+        if(!confirm(`Confirm ${type}?`)) return;
         const now = new Date();
         await db.ref('logs').push({
             timestamp: now.getTime(),
             readableDate: now.toLocaleDateString(),
             type: type,
-            site: document.getElementById('siteSel').value,
-            rule: document.getElementById('holidayRule').checked ? "6:30 PM" : "6:06 PM"
+            site: document.getElementById('siteSel').value
         });
     }
 
-    document.getElementById('btnIn').onclick = () => clockAction("IN");
-    document.getElementById('btnOut').onclick = () => clockAction("OUT");
+    document.getElementById('btnIn').onclick = () => doClock("IN");
+    document.getElementById('btnOut').onclick = () => doClock("OUT");
 
-    init();
+    refreshData();
 </script>
-
 </body>
 </html>
